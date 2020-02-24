@@ -19,17 +19,19 @@ sys.path.append(
 import connections
 
 class FTP_CensoMicrodados:
-    """
-    Read list of district codes
-    """
     url = 'ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/'
+    folder_save = os.path.join(
+        'gs://tb-dados_geograficos',
+        'raw',
+        'censo_microdados',
+    )
 
     ufs = [
-        'ba', 'se', 'al', 'pe', 'rn', 'pb', 'ce', 'pi', 'ma',
-        'go', 'mt', 'ms', 'df',
         'sp1', 'sp2_rm', 'rj', 'es', 'mg',
         'rs', 'sc', 'pr',
         'ap', 'am', 'ac', 'pa', 'ro', 'rr', 'to',
+        'ba', 'se', 'al', 'pe', 'rn', 'pb', 'ce', 'pi', 'ma',
+        'go', 'mt', 'ms', 'df',
     ]
 
     @classmethod
@@ -48,11 +50,7 @@ class FTP_CensoMicrodados:
 
     @classmethod
     def save(cls, files_dict):
-        folder_save = os.path.join(
-            'gs://tb-dados_geograficos',
-            'raw',
-            'censo_microdados',
-        )
+        folder_save = cls.folder_save
         gcs = connections.get_GCS_client()
         for name, fl in files_dict.items():
             if not name.endswith('/'):
@@ -61,7 +59,11 @@ class FTP_CensoMicrodados:
                 print('Trying to save:', name_remote)
                 with open(name_local, 'wb') as f:
                     f.write(fl.read())
-                gcs.put(name_local, name_remote)
+                try:
+                    gcs.put(name_local, name_remote)
+                except:
+                    if gcs.exists(name_remote):
+                        gcs.delete(name_remote)
                 os.remove(name_local)
                 print('Saved:', name_remote)
 
@@ -72,6 +74,30 @@ class FTP_CensoMicrodados:
         for uf in ufs:
             fls = cls.get(uf)
             cls.save(fls)
+
+    @classmethod
+    def check(cls):
+        folder_save = cls.folder_save
+        gcs = connections.get_GCS_client()
+        files = gcs.glob(os.path.join(folder_save, '*', '*.txt'))
+        filetypes = [
+            'Pessoas',
+            'Domicilios',
+            'Emigracao',
+            'Mortalidade',
+        ]
+        correct = []
+        ufs = set([x.split('/')[-2] for x in files])
+        for uf in sorted(ufs):
+            files_this = [x for x in files if x.split('/')[-2]==uf]
+            for type_ in filetypes:
+                contains = any([type_ in x for x in files_this])
+                if not contains:
+                    break
+            correct.append(uf)
+        fix_name = lambda s: s.upper().replace('_', '-')
+        remaining = [fix_name(x) for x in cls.ufs if fix_name(x) not in correct]
+        return files, correct, remaining
 
 class Parser:
     pass
@@ -90,5 +116,6 @@ if __name__ == '__main__':
         if parsed.ufs:
             ufs = parsed.ufs.split(',')
         else:
-            ufs = None
+            check = FTP_CensoMicrodados.check()
+            ufs = check[2]
         FTP_CensoMicrodados.main(ufs=ufs)
