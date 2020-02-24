@@ -44,30 +44,34 @@ def parse_municipios_to_df(municipios):
         'nome': 'municipio_nome',
     })
 
-    level_this = 'microrregiao'
-    level_next = 'mesorregiao'
-    df[level_this + '_id'] = df[level_this].apply(lambda x: x['id'])
-    df[level_this + '_nome'] = df[level_this].apply(lambda x: x['nome'])
+    levels = ['microrregiao', 'mesorregiao', 'UF', 'regiao']
+
+    level_this = levels[0]
+    level_next = levels[1]
+    df[level_this.lower() + '_id'] = df[level_this].apply(lambda x: x['id'])
+    df[level_this.lower() + '_nome'] = df[level_this].apply(lambda x: x['nome'])
     df[level_next] = df[level_this].apply(lambda x: x[level_next])
     df = df.drop(level_this, axis=1)
 
-    level_this = 'mesorregiao'
-    level_next = 'UF'
-    df[level_this + '_id'] = df[level_this].apply(lambda x: x['id'])
-    df[level_this + '_nome'] = df[level_this].apply(lambda x: x['nome'])
+    level_this = levels[1]
+    level_next = levels[2]
+    df[level_this.lower() + '_id'] = df[level_this].apply(lambda x: x['id'])
+    df[level_this.lower() + '_nome'] = df[level_this].apply(lambda x: x['nome'])
     df[level_next] = df[level_this].apply(lambda x: x[level_next])
     df = df.drop(level_this, axis=1)
 
-    level_this = 'UF'
-    level_next = 'regiao'
-    df[level_this + '_id'] = df[level_this].apply(lambda x: x['id'])
-    df[level_this + '_nome'] = df[level_this].apply(lambda x: x['nome'])
+    level_this = levels[2]
+    level_next = levels[3]
+    df[level_this.lower() + '_id'] = df[level_this].apply(lambda x: x['id'])
+    df[level_this.lower() + '_nome'] = df[level_this].apply(lambda x: x['nome'])
+    df[level_this.lower() + '_sigla'] = df[level_this].apply(lambda x: x['sigla'])
     df[level_next] = df[level_this].apply(lambda x: x[level_next])
     df = df.drop(level_this, axis=1)
 
-    level_this = 'regiao'
-    df[level_this + '_id'] = df[level_this].apply(lambda x: x['id'])
-    df[level_this + '_nome'] = df[level_this].apply(lambda x: x['nome'])
+    level_this = levels[3]
+    df[level_this.lower() + '_id'] = df[level_this].apply(lambda x: x['id'])
+    df[level_this.lower() + '_nome'] = df[level_this].apply(lambda x: x['nome'])
+    df[level_this.lower() + '_sigla'] = df[level_this].apply(lambda x: x['sigla'])
     df = df.drop(level_this, axis=1)
 
     return df
