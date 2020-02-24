@@ -1,0 +1,7 @@
+*__pycache__*
+*.json
+*.pyc
+*.txt
+*.csv
+*.gz
+my_analysis/
